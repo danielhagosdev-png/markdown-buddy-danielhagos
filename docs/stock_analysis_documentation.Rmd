@@ -1,0 +1,163 @@
+---
+title: "Documentation: Stock Portfolio Technical Analysis Script"
+author: "Daniel Hagos"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: flatly
+    highlight: tango
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+# Purpose
+
+This document explains the R script `stock_analysis.R` located in the `R/` folder of the project.  
+
+The script performs a basic technical analysis workflow on a portfolio of stocks using **fully synthetic data**. It is designed for educational purposes in BDA400 so that the analysis can run offline without relying on external APIs.
+
+**Main goals of the script:**
+
+- Read a list of stock symbols from `data/portfolio.txt`
+- Generate synthetic daily OHLCV data for each symbol
+- Calculate key summary statistics (mean, median, standard deviation, and 20-day Simple Moving Average)
+- Display the results in a clear tabular format
+
+# Inputs
+
+| Input | Description | Location |
+|-------|-------------|----------|
+| Portfolio file | Plain text file with one stock ticker per line | `data/portfolio.txt` |
+| Number of trading days | Default 252 (approx. 1 year) | Parameter inside `generate_synthetic_stock_data()` |
+| Random seed base | Controls reproducibility | Parameter `seed` |
+
+**Example content of `portfolio.txt`:**
+
+```
+AAPL
+MSFT
+GOOGL
+AMZN
+TSLA
+```
+
+# Outputs
+
+- A named list of tibbles (one per stock) containing synthetic OHLCV data
+- A summary statistics data frame with columns:
+  - `Symbol`
+  - `Mean_Close`
+  - `Median_Close`
+  - `SD_Close`
+  - `Last_Close`
+  - `SMA_20`
+  - `Observations`
+
+# Script Structure
+
+The script has three functions and a main execution block.
+
+## 1. `generate_synthetic_stock_data()`
+
+Creates a synthetic price series as a geometric random walk with normally distributed daily returns.
+
+```{r}
+# Function signature
+generate_synthetic_stock_data <- function(symbol, n_days = 252, seed = 42)
+```
+
+**Key steps inside the function:**
+
+- Different random seed per symbol for variety
+- Random starting price between $50 and $350
+- Daily returns drawn from a normal distribution with slight positive drift
+- OHLC values derived from the close price, with high and low each 0.1% to 2.5% away from it
+- Volume generated as random integers
+
+## 2. `load_portfolio_data()`
+
+Reads the portfolio file and generates data for every symbol.
+
+```{r}
+load_portfolio_data <- function(portfolio_file = "data/portfolio.txt")
+```
+
+Returns a **named list** of tibbles (keys = ticker symbols).
+
+## 3. `calculate_statistics()`
+
+Computes the required statistics for one stock data frame.
+
+```{r}
+calculate_statistics <- function(stock_df)
+```
+
+Uses base R for mean/median/sd and the `TTR` package for the 20-day Simple Moving Average (`SMA`).
+
+# Dependencies
+
+```{r}
+# Required packages
+library(tidyverse)   # data manipulation & piping
+library(TTR)         # Technical Trading Rules (SMA)
+```
+
+Install if needed:
+
+```r
+install.packages(c("tidyverse", "TTR"))
+```
+
+# How to Run
+
+From the project root directory in RStudio or the R console:
+
+```r
+source("R/stock_analysis.R")
+```
+
+Or open the script and click **Source**.
+
+# Example Output
+
+Output from running `source("R/stock_analysis.R")` on Windows with R 4.6 and tidyverse 2.0.0:
+
+```
+==================== PORTFOLIO STATISTICS ====================
+
+# A tibble: 5 × 7
+  Symbol Mean_Close Median_Close SD_Close Last_Close SMA_20 Observations
+  <chr>       <dbl>        <dbl>    <dbl>      <dbl>  <dbl>        <int>
+1 AAPL         287.         291.     23.5       240.   247.          252
+2 MSFT         286.         289.     31.4       321.   311.          252
+3 GOOGL        134.         134.     22.3       115.   110.          252
+4 AMZN         228.         220.     25.2       201.   196.          252
+5 TSLA          80.0         77.4     8.87       76.4   82.7          252
+
+==================== SAMPLE DATA (first 5 rows of AAPL) ====================
+
+# A tibble: 5 × 7
+  Date       Symbol  Open  High   Low Close   Volume
+  <date>     <chr>  <dbl> <dbl> <dbl> <dbl>    <int>
+1 2026-03-16 AAPL    269.  277.  268.  274. 14815218
+2 2026-03-17 AAPL    277.  282.  277.  278. 44082158
+3 2026-03-18 AAPL    291.  295.  288.  290. 46481498
+4 2026-03-19 AAPL    295.  297.  291.  293. 21503526
+5 2026-03-20 AAPL    295.  295.  286.  292. 27177327
+```
+
+# Notes & Limitations
+
+- Data is **synthetic**. It is useful for learning workflows and testing functions but should not be used for real investment decisions.
+- The moving average is a simple 20-day SMA on the Close price only.
+- No plotting is performed in the base script (can be added later).
+
+# Author
+
+Daniel Hagos  
+BDA400 – Data Science Tools and Techniques  
+Assignment 1 – Markdown Buddy
